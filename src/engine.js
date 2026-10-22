@@ -1,600 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<title>MolTeacher – Molecular Studio</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<style>
-/* ───────────────────────── Design tokens ─────────────────────────
-   Type scale (px): 11 caption · 12 footnote · 13 body (desktop default) · 15 title · 17 headline
-   Spacing: 4 / 8 / 12 / 16 / 24      Radii: 6 control-inner · 10 control/card · 14 floating panel
-   Shadows: --shadow-1 (resting float) · --shadow-2 (raised: toast, menus)
-   One accent (--accent) is used only for: primary action, selection, focus, slider fill.              */
-:root{
-  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, Roboto, "Helvetica Neue", sans-serif;
-  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px;
-  --r-sm:6px; --r-md:10px; --r-lg:14px;
-  --t-cap:11px; --t-foot:12px; --t-body:13px; --t-title:15px; --t-head:17px;
-  --sidebar-w:320px; --header-h:52px; --ctl-h:32px;
-
-  --bg:#F2F2F7; --surface:#FFFFFF; --surface-2:#F5F5F7; --surface-3:#E9E9EE;
-  --label:#1D1D1F; --label-2:#5A5A60; --label-3:#76767C;
-  --sep:rgba(60,60,67,.18); --sep-strong:rgba(60,60,67,.32);
-  --accent:#0062CC; --accent-fg:#FFFFFF; --accent-soft:rgba(0,98,204,.10);
-  --danger:#C62828; --ok:#1B7F3B;
-  --panel:rgba(255,255,255,.78); --panel-border:rgba(60,60,67,.16);
-  --shadow-1:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.08);
-  --shadow-2:0 2px 4px rgba(0,0,0,.08),0 12px 32px rgba(0,0,0,.16);
-  --canvas:#F2F2F7; --bond-auto:#6B6B72;
-}
-:root[data-theme="dark"]{
-  --bg:#0B0B0D; --surface:#1C1C1E; --surface-2:#242427; --surface-3:#2E2E32;
-  --label:#F5F5F7; --label-2:#ABABB2; --label-3:#8E8E95;
-  --sep:rgba(235,235,245,.14); --sep-strong:rgba(235,235,245,.30);
-  --accent:#4DA3FF; --accent-fg:#00182E; --accent-soft:rgba(77,163,255,.16);
-  --danger:#FF7B72; --ok:#5DD58A;
-  --panel:rgba(36,36,39,.78); --panel-border:rgba(235,235,245,.14);
-  --shadow-1:0 1px 2px rgba(0,0,0,.5),0 4px 14px rgba(0,0,0,.45);
-  --shadow-2:0 2px 4px rgba(0,0,0,.6),0 12px 32px rgba(0,0,0,.6);
-  --canvas:#0B0B0D; --bond-auto:#B4B4BA;
-}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{font:400 var(--t-body)/1.4 var(--font);color:var(--label);background:var(--bg);-webkit-font-smoothing:antialiased;overflow:hidden;display:flex;flex-direction:column}
-button,input,select{font:inherit;color:inherit}
-button{cursor:pointer}
-svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-:focus{outline:none}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-/* ── Controls (one family: height 32, radius 10) ── */
-.btn{height:var(--ctl-h);min-width:var(--ctl-h);padding:0 var(--s3);display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);border:1px solid var(--sep);background:var(--surface);border-radius:var(--r-md);font-weight:500;line-height:1;transition:background .12s,border-color .12s,transform .12s}
-.btn:hover{background:var(--surface-2)}
-.btn:active{transform:scale(.97)}
-.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
-.btn.primary:hover{filter:brightness(1.08)}
-.btn.icon{padding:0;width:var(--ctl-h)}
-.btn.small{height:26px;min-width:26px;padding:0 var(--s2);font-size:var(--t-foot);border-radius:var(--r-sm)}
-.btn[disabled]{opacity:.45;pointer-events:none}
-.field{height:var(--ctl-h);width:100%;padding:0 var(--s3);border:1px solid var(--sep);background:var(--surface-2);border-radius:var(--r-md);transition:border-color .12s,background .12s}
-.field:hover{border-color:var(--sep-strong)}
-select.field{appearance:none;-webkit-appearance:none;padding-right:28px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-.field::placeholder{color:var(--label-3)}
-
-.seg{display:inline-flex;padding:2px;gap:2px;background:var(--surface-3);border-radius:var(--r-md)}
-.seg button{height:calc(var(--ctl-h) - 4px);padding:0 var(--s3);border:0;background:transparent;border-radius:calc(var(--r-md) - 2px);font-weight:500;color:var(--label-2);transition:background .12s,color .12s,box-shadow .12s}
-.seg button:hover{color:var(--label)}
-.seg button[aria-pressed="true"]{background:var(--surface);color:var(--label);box-shadow:0 1px 2px rgba(0,0,0,.18)}
-.seg.full{display:flex}.seg.full button{flex:1}
-
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:20px;background:transparent;margin:0}
-input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--fill,50%),var(--surface-3) var(--fill,50%))}
-input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--surface-3)}
-input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--accent)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:#fff;border:.5px solid rgba(0,0,0,.2);box-shadow:0 1px 3px rgba(0,0,0,.35)}
-input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:.5px solid rgba(0,0,0,.2);box-shadow:0 1px 3px rgba(0,0,0,.35)}
-
-input.switch{-webkit-appearance:none;appearance:none;flex:none;width:38px;height:22px;margin:0;border-radius:11px;background:var(--surface-3);border:1px solid var(--sep);position:relative;cursor:pointer;transition:background .15s}
-input.switch::after{content:"";position:absolute;top:1px;left:1px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .15s}
-input.switch:checked{background:var(--accent);border-color:var(--accent)}
-input.switch:checked::after{transform:translateX(16px)}
-
-input[type=color]{-webkit-appearance:none;appearance:none;width:28px;height:28px;padding:0;border:0;background:none;cursor:pointer;border-radius:50%;flex:none}
-input[type=color]::-webkit-color-swatch-wrapper{padding:0}
-input[type=color]::-webkit-color-swatch{border:1px solid var(--sep-strong);border-radius:50%}
-input[type=color]::-moz-color-swatch{border:1px solid var(--sep-strong);border-radius:50%}
-
-/* ── Header ── */
-header{height:var(--header-h);flex:none;display:flex;align-items:center;gap:var(--s3);padding:0 var(--s4);background:var(--surface);border-bottom:1px solid var(--sep);z-index:30}
-.brand{display:flex;align-items:center;gap:var(--s2);font-weight:650;font-size:var(--t-title);letter-spacing:-.01em;white-space:nowrap}
-.brand svg{width:22px;height:22px;color:var(--accent)}
-.search{flex:1;max-width:440px;margin:0 auto;position:relative;display:flex}
-.search svg{position:absolute;left:10px;top:8px;color:var(--label-3);pointer-events:none}
-.search .field{padding-left:32px;padding-right:72px}
-.search .btn{position:absolute;right:3px;top:3px;height:26px;border-radius:var(--r-sm);padding:0 var(--s3)}
-.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;display:none}
-.loading .spin{display:block}.loading .lbl{display:none}
-@keyframes spin{to{transform:rotate(360deg)}}
-.formula{font-size:var(--t-body);padding:0 var(--s3);height:var(--ctl-h);display:flex;align-items:center;background:var(--surface-2);border-radius:var(--r-md);white-space:nowrap}
-.hdr-actions{display:flex;align-items:center;gap:var(--s2)}
-
-/* ── Layout ── */
-.app{flex:1;min-height:0;display:flex;position:relative}
-aside{width:var(--sidebar-w);flex:none;background:var(--surface);border-right:1px solid var(--sep);overflow-y:auto;overscroll-behavior:contain;transition:margin-left .25s cubic-bezier(.2,.8,.2,1),transform .25s;z-index:20}
-.app.side-hidden aside{margin-left:calc(-1 * var(--sidebar-w));visibility:hidden;transition:margin-left .25s cubic-bezier(.2,.8,.2,1),visibility 0s .25s}
-main{flex:1;min-width:0;position:relative;background:var(--canvas);overflow:hidden}
-#canvas-container,#view2d{position:absolute;inset:0}
-#canvas-container canvas{display:block;touch-action:none}
-#view2d{display:none;touch-action:none;cursor:grab}
-#view2d.dragging{cursor:grabbing}
-#view2d svg{width:100%;height:100%;display:block}
-.mode-2d #canvas-container{display:none}.mode-2d #view2d{display:block}
-#labels-overlay{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.atom-label{position:absolute;transform:translate(-50%,-50%);pointer-events:none;user-select:none;white-space:nowrap;line-height:1;transition:opacity .12s}
-.mode-2d #labels-overlay{display:none}
-
-/* ── Sidebar sections ── */
-.sec{border-bottom:1px solid var(--sep)}
-.sec>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;height:40px;padding:0 var(--s4);font-size:var(--t-foot);font-weight:600;color:var(--label-2);cursor:pointer;user-select:none}
-.sec>summary::-webkit-details-marker{display:none}
-.sec>summary::after{content:"";width:7px;height:7px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}
-.sec[open]>summary::after{transform:rotate(-135deg)}
-.sec>.body{padding:0 var(--s4) var(--s4);display:flex;flex-direction:column;gap:var(--s3)}
-.row{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);min-height:var(--ctl-h)}
-.row>label,.row>.name{flex:none;color:var(--label)}
-.row .ctl{flex:1;display:flex;align-items:center;justify-content:flex-end;gap:var(--s2);min-width:0}
-.row .ctl.slider{justify-content:stretch}
-.val{font:500 var(--t-foot) var(--mono);color:var(--label-2);min-width:34px;text-align:right}
-.hint{font-size:var(--t-foot);color:var(--label-2)}
-.card{padding:var(--s3);background:var(--surface-2);border-radius:var(--r-md)}
-.card .title{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2)}
-.card h2{margin:0;font-size:var(--t-head);font-weight:650;letter-spacing:-.01em}
-.card .meta{font-size:var(--t-foot);color:var(--label-2)}
-.card .formula-sub{font:500 var(--t-body) var(--mono);color:var(--accent);margin:var(--s1) 0}
-.card p{margin:0;font-size:var(--t-foot);color:var(--label-2);line-height:1.45}
-.legend-row{display:flex;align-items:center;gap:var(--s3);min-height:36px}
-.legend-row .nm{flex:1}
-.legend-row .ct{font:500 var(--t-foot) var(--mono);color:var(--label-2)}
-.bond-list{display:flex;flex-direction:column;gap:2px;max-height:240px;overflow:auto}
-.bond-item{display:flex;justify-content:space-between;align-items:center;height:30px;padding:0 var(--s2);border:0;background:transparent;border-radius:var(--r-sm);text-align:left}
-.bond-item:hover,.bond-item.hl{background:var(--accent-soft)}
-.bond-item .o{font:500 var(--t-foot) var(--mono);color:var(--label-2)}
-
-/* ── Floating layer (glass is functional-only: toolbar, hint, tooltip, toast) ── */
-.float{background:var(--panel);-webkit-backdrop-filter:saturate(1.6) blur(20px);backdrop-filter:saturate(1.6) blur(20px);border:1px solid var(--panel-border);box-shadow:var(--shadow-1);border-radius:var(--r-lg)}
-.toolbar{position:absolute;top:var(--s4);right:var(--s4);z-index:10;display:flex;gap:var(--s1);padding:var(--s1)}
-.toolbar .btn{border-color:transparent;background:transparent}
-.toolbar .btn:hover{background:var(--surface-3)}
-.toolbar .btn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
-.hintbar{position:absolute;bottom:var(--s4);left:50%;transform:translateX(-50%);z-index:10;padding:var(--s2) var(--s4);font-size:var(--t-foot);color:var(--label-2);white-space:nowrap;max-width:calc(100% - 32px);overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.tip{position:absolute;z-index:15;pointer-events:none;padding:var(--s2) var(--s3);font-size:var(--t-foot);border-radius:var(--r-md);opacity:0;transition:opacity .1s;white-space:nowrap}
-.tip.on{opacity:1}.tip b{font-weight:650}.tip .o{color:var(--label-2)}
-.toast{position:absolute;top:var(--s4);left:50%;z-index:40;transform:translate(-50%,-16px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:var(--s2);padding:var(--s3) var(--s4);background:var(--surface);border:1px solid var(--sep);box-shadow:var(--shadow-2);border-radius:var(--r-lg);font-weight:500;max-width:calc(100% - 32px);transition:transform .25s cubic-bezier(.2,.8,.2,1),opacity .2s}
-.toast.on{transform:translate(-50%,0);opacity:1}
-.toast svg{width:18px;height:18px}
-.toast.success svg{color:var(--ok)}.toast.error svg{color:var(--danger)}.toast.info svg{color:var(--accent)}
-.overlay-msg{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:var(--s5);color:var(--label-2);z-index:5}
-.overlay-msg.on{display:flex}.overlay-msg>div{max-width:360px}
-.busy{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:color-mix(in srgb,var(--canvas) 55%,transparent);z-index:12}
-.busy.on{display:flex}.busy .spin{display:block;width:22px;height:22px;color:var(--accent)}
-kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep-strong);border-bottom-width:2px;border-radius:4px;color:var(--label)}
-
-#canvas-container canvas{cursor:grab}#canvas-container canvas:active{cursor:grabbing}
-.over-bond #canvas-container canvas,.over-bond #view2d{cursor:pointer}
-/* 2D svg */
-.b2d{cursor:pointer}
-.b2d.hover line.vis{stroke:var(--accent)!important}
-.b2d line.hit{stroke:transparent;stroke-linecap:round}
-
-/* ── Responsive ── */
-@media (max-width:900px){
-  .formula{display:none}.brand .nm{display:none}
-  aside{position:absolute;top:0;bottom:0;left:0;box-shadow:var(--shadow-2);width:min(var(--sidebar-w),88vw)}
-  .app.side-hidden aside{margin-left:-100%}
-  .hdr-actions .lbl-txt{display:none}
-}
-@media (max-width:560px){
-  header{gap:var(--s2);padding:0 var(--s3)}
-  .brand{display:none}
-  .search .btn .lbl{display:none}.search .btn{width:26px;padding:0}
-  .search .field{padding-right:36px}
-  .hintbar{display:none}
-}
-@media (pointer:coarse){:root{--ctl-h:44px}.btn.small{height:32px}.bond-item{height:40px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01s!important}}
-@media (prefers-reduced-transparency:reduce){.float{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface)}}
-@media (prefers-contrast:more){:root{--sep:rgba(60,60,67,.5);--label-2:#3C3C41}:root[data-theme=dark]{--sep:rgba(235,235,245,.5);--label-2:#D0D0D6}}
-</style>
-</head>
-<body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-logo" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 6.5 6.5 16.5M12 6.5l5.5 10M7.5 17.5h9"/></g><circle cx="12" cy="6" r="3.2" fill="currentColor"/><circle cx="6" cy="17.5" r="2.6" fill="currentColor" opacity=".75"/><circle cx="18" cy="17.5" r="2.6" fill="currentColor" opacity=".75"/></symbol>
-  <symbol id="i-search" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.6"/><path d="m10.5 10.5 3.5 3.5"/></symbol>
-  <symbol id="i-sidebar" viewBox="0 0 16 16"><rect x="1.8" y="2.8" width="12.4" height="10.4" rx="2.2"/><path d="M6 2.8v10.4"/></symbol>
-  <symbol id="i-reset" viewBox="0 0 16 16"><path d="M2.5 6V3.2H5.3M13.5 10v2.8H10.7M2.5 3.2l3.2 3.2M13.5 12.8l-3.2-3.2"/></symbol>
-  <symbol id="i-moon" viewBox="0 0 16 16"><path d="M13.2 9.6A5.6 5.6 0 0 1 6.4 2.8a5.6 5.6 0 1 0 6.8 6.8Z"/></symbol>
-  <symbol id="i-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.8"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></symbol>
-  <symbol id="i-image" viewBox="0 0 16 16"><rect x="1.8" y="2.8" width="12.4" height="10.4" rx="2"/><circle cx="5.6" cy="6.3" r="1.2"/><path d="m2.5 12 3.6-3.4 2.6 2.4 2-1.8 3 2.8"/></symbol>
-  <symbol id="i-code" viewBox="0 0 16 16"><path d="m5.5 4.5-3.5 3.5 3.5 3.5M10.5 4.5 14 8l-3.5 3.5"/></symbol>
-  <symbol id="i-rotate" viewBox="0 0 16 16"><path d="M13.3 8A5.3 5.3 0 1 1 11.7 4.2"/><path d="M13.4 1.8v2.8H10.6"/></symbol>
-  <symbol id="i-check" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="m5.3 8.2 1.9 1.9 3.5-3.9"/></symbol>
-  <symbol id="i-warn" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.6v4M8 11.2v.1"/></symbol>
-  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v4M8 4.9v.1"/></symbol>
-</svg>
-
-<header>
-  <button class="btn icon" id="btn-sidebar" aria-label="Toggle sidebar" aria-pressed="true" aria-controls="sidebar" title="Toggle sidebar (B)"><svg class="i"><use href="#i-sidebar"/></svg></button>
-  <div class="brand"><svg><use href="#i-logo"/></svg><span class="nm">MolTeacher</span></div>
-
-  <form id="search-form" class="search" role="search">
-    <svg class="i"><use href="#i-search"/></svg>
-    <label class="sr-only" for="molecule-search-input">Search PubChem by compound name</label>
-    <input class="field" type="search" id="molecule-search-input" placeholder="Search PubChem — caffeine, aspirin, glucose…" autocomplete="off" spellcheck="false" enterkeyhint="search">
-    <button type="submit" id="btn-search" class="btn primary" aria-label="Fetch molecule"><span class="lbl">Fetch</span><span class="spin" aria-hidden="true"></span></button>
-  </form>
-
-  <div class="seg" id="seg-view" role="group" aria-label="View mode">
-    <button type="button" data-val="2d" aria-pressed="false" title="2D structure (2)">2D</button>
-    <button type="button" data-val="3d" aria-pressed="true" title="3D model (3)">3D</button>
-  </div>
-  <div class="formula" id="katex-header" aria-label="Molecular formula"></div>
-  <div class="hdr-actions">
-    <button class="btn" id="btn-export-png" title="Download PNG of the current view"><svg class="i"><use href="#i-image"/></svg><span class="lbl-txt">PNG</span></button>
-    <button class="btn" id="btn-export-svg" title="Download SVG of the current view"><svg class="i"><use href="#i-code"/></svg><span class="lbl-txt">SVG</span></button>
-  </div>
-</header>
-
-<div class="app side-open" id="app">
-  <aside id="sidebar" aria-label="Inspector">
-    <details class="sec" open>
-      <summary>Molecule</summary>
-      <div class="body">
-        <div>
-          <label class="sr-only" for="preset-dropdown">Curriculum preset</label>
-          <select id="preset-dropdown" class="field">
-            <option value="caffeine">Caffeine</option><option value="water">Water</option><option value="co2">Carbon dioxide</option>
-            <option value="methane">Methane</option><option value="ethanol">Ethanol</option><option value="glucose">Glucose</option>
-            <option value="benzene">Benzene</option><option value="aspirin">Aspirin</option><option value="glycine">Glycine</option>
-          </select>
-        </div>
-        <div class="card">
-          <div class="title"><h2 id="mol-name">Caffeine</h2><span class="meta" id="mol-atom-count">24 atoms</span></div>
-          <div class="formula-sub" id="mol-formula-sub"></div>
-          <p id="mol-description"></p>
-        </div>
-      </div>
-    </details>
-
-    <details class="sec" open>
-      <summary>Atoms</summary>
-      <div class="body">
-        <div class="row"><label for="s-atomScale">Size</label><div class="ctl slider"><input type="range" id="s-atomScale" data-key="atomScale" min="0.5" max="1.6" step="0.05"><span class="val" data-val-for="atomScale"></span></div></div>
-        <div class="row"><label for="s-showLabels">Labels</label><div class="ctl"><input type="checkbox" role="switch" class="switch" id="s-showLabels" data-key="showLabels"></div></div>
-        <div class="row"><label for="s-labelContent">Label shows</label><div class="ctl"><select class="field" id="s-labelContent" data-key="labelContent" style="width:150px"><option value="symbol">Symbol (C)</option><option value="name">Name (Carbon)</option><option value="number">Atomic number (6)</option></select></div></div>
-        <div class="row"><label for="s-labelSize">Label size</label><div class="ctl slider"><input type="range" id="s-labelSize" data-key="labelSize" min="9" max="28" step="1"><span class="val" data-val-for="labelSize"></span></div></div>
-        <div class="row"><label for="s-labelWeight">Weight</label><div class="ctl"><select class="field" id="s-labelWeight" data-key="labelWeight" style="width:150px"><option value="400">Regular</option><option value="500">Medium</option><option value="600">Semibold</option><option value="700">Bold</option></select></div></div>
-        <div class="row"><span class="name">Label color</span><div class="ctl">
-          <div class="seg" data-key="labelColorMode" role="group" aria-label="Label color mode"><button type="button" data-val="auto">Auto</button><button type="button" data-val="custom">Custom</button></div>
-          <input type="color" data-key="labelColor" aria-label="Custom label color"></div></div>
-      </div>
-    </details>
-
-    <details class="sec" open>
-      <summary>Bonds</summary>
-      <div class="body">
-        <div class="row"><label for="s-bondScale">Thickness</label><div class="ctl slider"><input type="range" id="s-bondScale" data-key="bondScale" min="0.4" max="1.8" step="0.05"><span class="val" data-val-for="bondScale"></span></div></div>
-        <div class="row"><span class="name">Color</span><div class="ctl"><div class="seg" data-key="bondStyle" role="group" aria-label="Bond color style"><button type="button" data-val="uniform">Solid</button><button type="button" data-val="order">By order</button></div></div></div>
-        <div class="row" id="row-bond-solid"><span class="name">Solid color</span><div class="ctl"><button class="btn small" type="button" id="btn-bond-auto">Auto</button><input type="color" data-key="bondColor" aria-label="Bond color"></div></div>
-        <div class="row" id="row-bond-order"><span class="name">Single · Double · Triple</span><div class="ctl">
-          <input type="color" data-key="bondColor1" aria-label="Single bond color"><input type="color" data-key="bondColor2" aria-label="Double bond color"><input type="color" data-key="bondColor3" aria-label="Triple bond color"></div></div>
-      </div>
-    </details>
-
-    <details class="sec" open>
-      <summary>Elements</summary>
-      <div class="body">
-        <div id="cpk-legend-list"></div>
-        <div class="row"><span class="hint">Tap a swatch to recolor an element.</span><div class="ctl"><button class="btn small" type="button" id="btn-reset-colors">Reset</button></div></div>
-      </div>
-    </details>
-
-    <details class="sec">
-      <summary>Scene</summary>
-      <div class="body">
-        <div class="row"><span class="name">Appearance</span><div class="ctl"><div class="seg" data-key="appearance" role="group" aria-label="Appearance"><button type="button" data-val="auto">Auto</button><button type="button" data-val="light">Light</button><button type="button" data-val="dark">Dark</button></div></div></div>
-        <div class="row"><span class="name">Background</span><div class="ctl"><div class="seg" data-key="bgMode" role="group" aria-label="Background"><button type="button" data-val="theme">Theme</button><button type="button" data-val="custom">Custom</button></div><input type="color" data-key="bgColor" aria-label="Custom background color"></div></div>
-      </div>
-    </details>
-
-    <details class="sec">
-      <summary>Bond editor</summary>
-      <div class="body">
-        <p class="hint" style="margin:0">Select a bond to cycle Single → Double → Triple. Also works by clicking it in the view.</p>
-        <div class="bond-list" id="bond-list"></div>
-        <div class="row"><span class="hint">Edits last until you load another molecule.</span><div class="ctl"><button class="btn small" type="button" id="btn-reset-bonds">Restore</button></div></div>
-      </div>
-    </details>
-  </aside>
-
-  <main id="stage">
-    <div class="toolbar float" role="toolbar" aria-label="View tools">
-      <button class="btn icon" id="btn-reset-view" aria-label="Reset view" title="Reset view (R)"><svg class="i"><use href="#i-reset"/></svg></button>
-      <button class="btn icon" id="btn-autorotate" aria-pressed="false" aria-label="Auto-rotate" title="Auto-rotate (A)"><svg class="i"><use href="#i-rotate"/></svg></button>
-      <button class="btn icon" id="btn-toggle-theme" aria-label="Toggle light and dark" title="Toggle light / dark"><svg class="i"><use href="#i-moon"/></svg></button>
-    </div>
-
-    <div id="canvas-container"></div>
-    <div id="view2d" aria-label="2D structure"></div>
-    <div id="labels-overlay" aria-hidden="true"></div>
-
-    <div class="tip float" id="bond-tip" role="tooltip"></div>
-    <div class="hintbar float" id="hintbar"></div>
-    <div class="busy" id="busy"><span class="spin"></span></div>
-    <div class="overlay-msg" id="gl-error"><div><b>3D view unavailable</b><p>WebGL or the 3D library couldn’t load. Showing the 2D structure instead.</p></div></div>
-    <div class="toast" id="toast" role="status" aria-live="polite"><svg class="i" id="toast-icon"><use href="#i-info"/></svg><span id="toast-text"></span></div>
-  </main>
-</div>
-<script>
-        // Standard Chemical CPK Color Palette with Atomic Radii & Colors
-        const CPK_COLORS = {
-            'H':  { color: '#F8FAFC', textColor: '#0F172A', radius: 0.38, name: 'Hydrogen' },
-            'C':  { color: '#334155', textColor: '#FFFFFF', radius: 0.65, name: 'Carbon' },
-            'N':  { color: '#3B82F6', textColor: '#FFFFFF', radius: 0.60, name: 'Nitrogen' },
-            'O':  { color: '#EF4444', textColor: '#FFFFFF', radius: 0.55, name: 'Oxygen' },
-            'P':  { color: '#F97316', textColor: '#FFFFFF', radius: 0.75, name: 'Phosphorus' },
-            'S':  { color: '#EAB308', textColor: '#0F172A', radius: 0.70, name: 'Sulfur' },
-            'F':  { color: '#10B981', textColor: '#FFFFFF', radius: 0.50, name: 'Fluorine' },
-            'Cl': { color: '#22C55E', textColor: '#FFFFFF', radius: 0.65, name: 'Chlorine' },
-            'Br': { color: '#991B1B', textColor: '#FFFFFF', radius: 0.75, name: 'Bromine' },
-            'I':  { color: '#6B21A8', textColor: '#FFFFFF', radius: 0.85, name: 'Iodine' }
-        };
-
-        // Built-in Curriculum Presets
-        const PRESET_MOLECULES = {
-            caffeine: {
-                name: 'Caffeine',
-                formula: 'C8H10N4O2',
-                katex: '\\text{C}_8\\text{H}_{10}\\text{N}_4\\text{O}_2',
-                desc: 'Central nervous system stimulant purine alkaloid found in coffee.',
-                atoms: [
-                    { elem: 'C', pos: [-0.8, -0.6, 0.0] },
-                    { elem: 'N', pos: [0.5, -0.9, 0.0] },
-                    { elem: 'C', pos: [1.2, 0.2, 0.0] },
-                    { elem: 'C', pos: [0.5, 1.4, 0.0] },
-                    { elem: 'C', pos: [-0.8, 1.2, 0.0] },
-                    { elem: 'N', pos: [-1.4, 0.0, 0.0] },
-                    { elem: 'O', pos: [-1.4, -1.7, 0.0] },
-                    { elem: 'O', pos: [1.0, 2.5, 0.0] },
-                    { elem: 'N', pos: [2.5, 0.0, 0.0] },
-                    { elem: 'C', pos: [2.6, -1.3, 0.0] },
-                    { elem: 'N', pos: [1.4, -1.9, 0.0] },
-                    { elem: 'C', pos: [-2.8, -0.1, 0.0] },
-                    { elem: 'C', pos: [-1.5, 2.4, 0.0] },
-                    { elem: 'C', pos: [3.7, 0.8, 0.0] },
-                    { elem: 'H', pos: [3.5, -1.9, 0.0] },
-                    { elem: 'H', pos: [-3.2, 0.4, 0.9] }, { elem: 'H', pos: [-3.2, 0.4, -0.9] }, { elem: 'H', pos: [-3.1, -1.1, 0.0] },
-                    { elem: 'H', pos: [-2.6, 2.3, 0.0] }, { elem: 'H', pos: [-1.2, 3.0, 0.9] }, { elem: 'H', pos: [-1.2, 3.0, -0.9] },
-                    { elem: 'H', pos: [4.6, 0.2, 0.0] }, { elem: 'H', pos: [3.7, 1.4, 0.9] }, { elem: 'H', pos: [3.7, 1.4, -0.9] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 1 }, { from: 1, to: 2, type: 1 }, { from: 2, to: 3, type: 2 },
-                    { from: 3, to: 4, type: 1 }, { from: 4, to: 5, type: 1 }, { from: 5, to: 0, type: 1 },
-                    { from: 0, to: 6, type: 2 }, { from: 4, to: 7, type: 2 }, { from: 2, to: 8, type: 1 },
-                    { from: 8, to: 9, type: 1 }, { from: 9, to: 10, type: 2 }, { from: 10, to: 1, type: 1 },
-                    { from: 5, to: 11, type: 1 }, { from: 3, to: 12, type: 1 }, { from: 8, to: 13, type: 1 },
-                    { from: 9, to: 14, type: 1 }, { from: 11, to: 15, type: 1 }, { from: 11, to: 16, type: 1 },
-                    { from: 11, to: 17, type: 1 }, { from: 12, to: 18, type: 1 }, { from: 12, to: 19, type: 1 },
-                    { from: 12, to: 20, type: 1 }, { from: 13, to: 21, type: 1 }, { from: 13, to: 22, type: 1 },
-                    { from: 13, to: 23, type: 1 }
-                ]
-            },
-            water: {
-                name: 'Water',
-                formula: 'H2O',
-                katex: '\\text{H}_2\\text{O}',
-                desc: 'V-shaped polar inorganic molecule fundamental for life.',
-                atoms: [
-                    { elem: 'O', pos: [0.0, 0.1, 0.0] },
-                    { elem: 'H', pos: [-0.85, -0.5, 0.0] },
-                    { elem: 'H', pos: [0.85, -0.5, 0.0] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 1 },
-                    { from: 0, to: 2, type: 1 }
-                ]
-            },
-            co2: {
-                name: 'Carbon Dioxide',
-                formula: 'CO2',
-                katex: '\\text{CO}_2',
-                desc: 'Linear non-polar greenhouse gas molecule.',
-                atoms: [
-                    { elem: 'C', pos: [0.0, 0.0, 0.0] },
-                    { elem: 'O', pos: [-1.4, 0.0, 0.0] },
-                    { elem: 'O', pos: [1.4, 0.0, 0.0] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 2 },
-                    { from: 0, to: 2, type: 2 }
-                ]
-            },
-            methane: {
-                name: 'Methane',
-                formula: 'CH4',
-                katex: '\\text{CH}_4',
-                desc: 'Tetrahedral organic molecule, primary constituent of natural gas.',
-                atoms: [
-                    { elem: 'C', pos: [0.0, 0.0, 0.0] },
-                    { elem: 'H', pos: [0.63, 0.63, 0.63] },
-                    { elem: 'H', pos: [-0.63, -0.63, 0.63] },
-                    { elem: 'H', pos: [-0.63, 0.63, -0.63] },
-                    { elem: 'H', pos: [0.63, -0.63, -0.63] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 1 }, { from: 0, to: 2, type: 1 },
-                    { from: 0, to: 3, type: 1 }, { from: 0, to: 4, type: 1 }
-                ]
-            },
-            ethanol: {
-                name: 'Ethanol',
-                formula: 'C2H6O',
-                katex: '\\text{C}_2\\text{H}_6\\text{O}',
-                desc: 'Primary simple alcohol compound found in beverages.',
-                atoms: [
-                    { elem: 'C', pos: [-1.1, -0.2, 0.0] },
-                    { elem: 'C', pos: [0.2, 0.5, 0.0] },
-                    { elem: 'O', pos: [1.3, -0.4, 0.0] },
-                    { elem: 'H', pos: [2.1, 0.1, 0.0] },
-                    { elem: 'H', pos: [-1.1, -0.8, 0.9] }, { elem: 'H', pos: [-1.1, -0.8, -0.9] }, { elem: 'H', pos: [-1.9, 0.5, 0.0] },
-                    { elem: 'H', pos: [0.2, 1.1, 0.9] }, { elem: 'H', pos: [0.2, 1.1, -0.9] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 1 }, { from: 1, to: 2, type: 1 }, { from: 2, to: 3, type: 1 },
-                    { from: 0, to: 4, type: 1 }, { from: 0, to: 5, type: 1 }, { from: 0, to: 6, type: 1 },
-                    { from: 1, to: 7, type: 1 }, { from: 1, to: 8, type: 1 }
-                ]
-            },
-            benzene: {
-                name: 'Benzene',
-                formula: 'C6H6',
-                katex: '\\text{C}_6\\text{H}_6',
-                desc: 'Planar aromatic hydrocarbon ring with delocalized pi electrons.',
-                atoms: [
-                    { elem: 'C', pos: [1.4, 0.0, 0.0] }, { elem: 'C', pos: [0.7, 1.21, 0.0] },
-                    { elem: 'C', pos: [-0.7, 1.21, 0.0] }, { elem: 'C', pos: [-1.4, 0.0, 0.0] },
-                    { elem: 'C', pos: [-0.7, -1.21, 0.0] }, { elem: 'C', pos: [0.7, -1.21, 0.0] },
-                    { elem: 'H', pos: [2.4, 0.0, 0.0] }, { elem: 'H', pos: [1.2, 2.08, 0.0] },
-                    { elem: 'H', pos: [-1.2, 2.08, 0.0] }, { elem: 'H', pos: [-2.4, 0.0, 0.0] },
-                    { elem: 'H', pos: [-1.2, -2.08, 0.0] }, { elem: 'H', pos: [1.2, -2.08, 0.0] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 2 }, { from: 1, to: 2, type: 1 }, { from: 2, to: 3, type: 2 },
-                    { from: 3, to: 4, type: 1 }, { from: 4, to: 5, type: 2 }, { from: 5, to: 0, type: 1 },
-                    { from: 0, to: 6, type: 1 }, { from: 1, to: 7, type: 1 }, { from: 2, to: 8, type: 1 },
-                    { from: 3, to: 9, type: 1 }, { from: 4, to: 10, type: 1 }, { from: 5, to: 11, type: 1 }
-                ]
-            },
-            aspirin: {
-                name: 'Aspirin',
-                formula: 'C9H8O4',
-                katex: '\\text{C}_9\\text{H}_8\\text{O}_4',
-                desc: 'Acetylsalicylic acid, common nonsteroidal anti-inflammatory medication.',
-                atoms: [
-                    { elem: 'C', pos: [0.0, 0.0, 0.0] }, { elem: 'C', pos: [1.2, 0.7, 0.0] },
-                    { elem: 'C', pos: [2.4, 0.0, 0.0] }, { elem: 'C', pos: [2.4, -1.4, 0.0] },
-                    { elem: 'C', pos: [1.2, -2.1, 0.0] }, { elem: 'C', pos: [0.0, -1.4, 0.0] },
-                    { elem: 'C', pos: [-1.2, 0.8, 0.0] }, { elem: 'O', pos: [-2.4, 0.3, 0.0] },
-                    { elem: 'O', pos: [-1.0, 2.0, 0.0] }, { elem: 'O', pos: [1.2, 2.1, 0.0] },
-                    { elem: 'C', pos: [2.3, 2.9, 0.0] }, { elem: 'O', pos: [3.4, 2.4, 0.0] },
-                    { elem: 'C', pos: [2.0, 4.3, 0.0] }, { elem: 'H', pos: [-3.0, 0.9, 0.0] },
-                    { elem: 'H', pos: [3.3, 0.5, 0.0] }, { elem: 'H', pos: [3.3, -1.9, 0.0] },
-                    { elem: 'H', pos: [1.2, -3.2, 0.0] }, { elem: 'H', pos: [-0.9, -1.9, 0.0] },
-                    { elem: 'H', pos: [1.0, 4.6, 0.0] }, { elem: 'H', pos: [2.5, 4.8, 0.8] }, { elem: 'H', pos: [2.5, 4.8, -0.8] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 2 }, { from: 1, to: 2, type: 1 }, { from: 2, to: 3, type: 2 },
-                    { from: 3, to: 4, type: 1 }, { from: 4, to: 5, type: 2 }, { from: 5, to: 0, type: 1 },
-                    { from: 0, to: 6, type: 1 }, { from: 6, to: 7, type: 1 }, { from: 6, to: 8, type: 2 },
-                    { from: 1, to: 9, type: 1 }, { from: 9, to: 10, type: 1 }, { from: 10, to: 11, type: 2 },
-                    { from: 10, to: 12, type: 1 }, { from: 7, to: 13, type: 1 }, { from: 2, to: 14, type: 1 },
-                    { from: 3, to: 15, type: 1 }, { from: 4, to: 16, type: 1 }, { from: 5, to: 17, type: 1 },
-                    { from: 12, to: 18, type: 1 }, { from: 12, to: 19, type: 1 }, { from: 12, to: 20, type: 1 }
-                ]
-            },
-            glycine: {
-                name: 'Glycine',
-                formula: 'C2H5NO2',
-                katex: '\\text{C}_2\\text{H}_5\\text{NO}_2',
-                desc: 'Simplest stable amino acid with a hydrogen side-chain.',
-                atoms: [
-                    { elem: 'C', pos: [0.0, -0.4, 0.0] }, { elem: 'C', pos: [1.2, 0.4, 0.0] },
-                    { elem: 'O', pos: [1.2, 1.6, 0.0] }, { elem: 'O', pos: [2.3, -0.3, 0.0] },
-                    { elem: 'H', pos: [3.0, 0.2, 0.0] }, { elem: 'N', pos: [-1.2, 0.4, 0.0] },
-                    { elem: 'H', pos: [-1.3, 1.0, 0.8] }, { elem: 'H', pos: [-1.3, 1.0, -0.8] },
-                    { elem: 'H', pos: [0.0, -1.0, 0.9] }, { elem: 'H', pos: [0.0, -1.0, -0.9] }
-                ],
-                bonds: [
-                    { from: 0, to: 1, type: 1 }, { from: 1, to: 2, type: 2 }, { from: 1, to: 3, type: 1 },
-                    { from: 3, to: 4, type: 1 }, { from: 0, to: 5, type: 1 }, { from: 5, to: 6, type: 1 },
-                    { from: 5, to: 7, type: 1 }, { from: 0, to: 8, type: 1 }, { from: 0, to: 9, type: 1 }
-                ]
-            }
-        };
-
-        // ── Extensions to the original data ─────────────────────────────
-        // More elements (CPK-style colors), atomic numbers, and the Glucose preset that the
-        // original dropdown listed but never defined (selecting it did nothing).
-        Object.assign(CPK_COLORS, {
-            'Li': { color: '#A855F7', radius: 0.9,  name: 'Lithium' },
-            'B':  { color: '#F4A582', radius: 0.7,  name: 'Boron' },
-            'Na': { color: '#7C6CF0', radius: 1.0,  name: 'Sodium' },
-            'Mg': { color: '#4ADE80', radius: 0.95, name: 'Magnesium' },
-            'Si': { color: '#C9A27E', radius: 0.8,  name: 'Silicon' },
-            'K':  { color: '#9333EA', radius: 1.1,  name: 'Potassium' },
-            'Ca': { color: '#65A30D', radius: 1.0,  name: 'Calcium' },
-            'Fe': { color: '#D9731A', radius: 0.8,  name: 'Iron' },
-            'Cu': { color: '#B9772F', radius: 0.8,  name: 'Copper' },
-            'Zn': { color: '#7C8AA5', radius: 0.8,  name: 'Zinc' }
-        });
-        const ATOMIC_NUM = { H:1, Li:3, B:5, C:6, N:7, O:8, F:9, Na:11, Mg:12, Si:14, P:15, S:16, Cl:17, K:19, Ca:20, Fe:26, Cu:29, Zn:30, Br:35, I:53 };
-        const DEFAULT_ELEM = { color: '#94A3B8', radius: 0.6 };
-
-        PRESET_MOLECULES.glucose = {
-            name: 'Glucose', formula: 'C6H12O6',
-            katex: '\\text{C}_6\\text{H}_{12}\\text{O}_6',
-            desc: 'β-D-glucopyranose in its chair form, the body’s main sugar fuel.',
-            atoms: [
-                { elem:'C', pos:[1.45,0,0.25] }, { elem:'C', pos:[0.725,1.256,-0.25] }, { elem:'C', pos:[-0.725,1.256,0.25] },
-                { elem:'C', pos:[-1.45,0,-0.25] }, { elem:'C', pos:[-0.725,-1.256,0.25] }, { elem:'O', pos:[0.725,-1.256,-0.25] },
-                { elem:'C', pos:[-1.43,-2.47,-0.1] }, { elem:'O', pos:[2.8,0.1,-0.1] }, { elem:'O', pos:[1.43,2.47,0.1] },
-                { elem:'O', pos:[-1.43,2.47,-0.1] }, { elem:'O', pos:[-2.85,0,0.1] }, { elem:'O', pos:[-1.9,-3.7,0.3] },
-                { elem:'H', pos:[1.5,0,1.35] }, { elem:'H', pos:[0.73,1.26,-1.35] }, { elem:'H', pos:[-0.73,1.26,1.35] },
-                { elem:'H', pos:[-1.45,0,-1.35] }, { elem:'H', pos:[-0.73,-1.26,1.35] }, { elem:'H', pos:[-0.55,-2.75,0.5] },
-                { elem:'H', pos:[-1.9,-2.0,-1.0] }, { elem:'H', pos:[3.3,-0.65,-0.3] }, { elem:'H', pos:[2.2,2.9,0.4] },
-                { elem:'H', pos:[-2.2,2.9,-0.4] }, { elem:'H', pos:[-3.4,0.7,0.3] }, { elem:'H', pos:[-2.6,-4.2,0.0] }
-            ],
-            bonds: [
-                {from:0,to:1,type:1},{from:1,to:2,type:1},{from:2,to:3,type:1},{from:3,to:4,type:1},{from:4,to:5,type:1},{from:5,to:0,type:1},{from:4,to:6,type:1},
-                {from:0,to:7,type:1},{from:1,to:8,type:1},{from:2,to:9,type:1},{from:3,to:10,type:1},{from:6,to:11,type:1},
-                {from:0,to:12,type:1},{from:1,to:13,type:1},{from:2,to:14,type:1},{from:3,to:15,type:1},{from:4,to:16,type:1},{from:6,to:17,type:1},{from:6,to:18,type:1},
-                {from:7,to:19,type:1},{from:8,to:20,type:1},{from:9,to:21,type:1},{from:10,to:22,type:1},{from:11,to:23,type:1}
-            ]
-        };
-
-
-        // Caffeine: the original coordinates/bonds put a methyl on a ring carbon and crossed bonds through atoms.
-        // Rebuilt as the real purine skeleton (1,3,7-trimethylxanthine) with planar, non-overlapping geometry.
-        PRESET_MOLECULES.caffeine = {
-            name: 'Caffeine', formula: 'C8H10N4O2',
-            katex: '\\text{C}_8\\text{H}_{10}\\text{N}_4\\text{O}_2',
-            desc: 'Central nervous system stimulant purine alkaloid found in coffee.',
-            atoms: [
-                { elem:'N', pos:[-1.21, 0.7, 0.0] },
-                { elem:'C', pos:[-1.21, -0.7, 0.0] },
-                { elem:'N', pos:[0, -1.4, 0.0] },
-                { elem:'C', pos:[1.21, -0.7, 0.0] },
-                { elem:'C', pos:[1.21, 0.7, 0.0] },
-                { elem:'C', pos:[0, 1.4, 0.0] },
-                { elem:'O', pos:[-2.27, -1.31, 0.0] },
-                { elem:'O', pos:[0, 2.62, 0.0] },
-                { elem:'N', pos:[2.54, 1.13, 0.0] },
-                { elem:'C', pos:[3.37, 0.0, 0.0] },
-                { elem:'N', pos:[2.54, -1.13, 0.0] },
-                { elem:'C', pos:[-2.48, 1.44, 0.0] },
-                { elem:'C', pos:[0.0, -2.87, 0.0] },
-                { elem:'C', pos:[3.0, 2.53, 0.0] },
-                { elem:'H', pos:[-3.31, 0.73, 0.0] },
-                { elem:'H', pos:[-2.54, 2.06, 0.89] },
-                { elem:'H', pos:[-2.54, 2.06, -0.89] },
-                { elem:'H', pos:[1.02, -3.23, 0.0] },
-                { elem:'H', pos:[-0.51, -3.23, 0.89] },
-                { elem:'H', pos:[-0.51, -3.23, -0.89] },
-                { elem:'H', pos:[2.13, 3.19, 0.0] },
-                { elem:'H', pos:[3.6, 2.71, 0.89] },
-                { elem:'H', pos:[3.6, 2.71, -0.89] },
-                { elem:'H', pos:[4.45, 0, 0] }
-            ],
-            bonds: [{from:0,to:1,type:1}, {from:1,to:2,type:1}, {from:2,to:3,type:1}, {from:3,to:4,type:2}, {from:4,to:5,type:1}, {from:5,to:0,type:1}, {from:5,to:7,type:2}, {from:1,to:6,type:2}, {from:0,to:11,type:1}, {from:2,to:12,type:1}, {from:4,to:8,type:1}, {from:8,to:9,type:1}, {from:9,to:10,type:2}, {from:10,to:3,type:1}, {from:8,to:13,type:1}, {from:11,to:14,type:1}, {from:11,to:15,type:1}, {from:11,to:16,type:1}, {from:12,to:17,type:1}, {from:12,to:18,type:1}, {from:12,to:19,type:1}, {from:13,to:20,type:1}, {from:13,to:21,type:1}, {from:13,to:22,type:1}, {from:9,to:23,type:1}]
-        };
-
-        // ── Application state (persisted) ───────────────────────────────
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import katex from 'katex';
+import { CPK_COLORS, PRESET_MOLECULES, ATOMIC_NUM, DEFAULT_ELEM } from './data/molecules.js';
+// ── Application state (persisted) ───────────────────────────────
         const DEFAULTS = {
             view: '3d', atomScale: 1.0, bondScale: 1.0,
             showLabels: true, labelContent: 'symbol', labelSize: 13, labelWeight: '600',
-            labelColorMode: 'auto', labelColor: '#FFFFFF',
-            bondStyle: 'uniform', bondColor: null, bondColor1: '#8E8E93', bondColor2: '#0A84FF', bondColor3: '#FF9F0A',
-            bgMode: 'theme', bgColor: '#1F2937', appearance: 'auto',
-            autoRotate: false, elemColors: {}
+            labelColorMode: 'auto', labelColor: '#FFFFFF', labelFont: 'system',
+            bondStyle: 'uniform', bondColor: null, bondColor1: '#8E8E93', bondColor2: '#4682D5', bondColor3: '#D19E41',
+            bgMode: 'theme', bgColor: '#151515', appearance: 'dark',
+            autoRotate: false, elemColors: {}, equationText: ''
         };
-        const STORE_KEY = 'molteacher.v2';
+        const STORE_KEY = 'molteacher.v3';
         const S = Object.assign({}, DEFAULTS, loadStored());
         function loadStored() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; } }
         function saveStored() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} }
@@ -619,6 +36,7 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
             const L = 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
             return L > 0.55 ? '#111114' : '#FFFFFF';
         }
+        function labelFontFamily() { return S.labelFont === 'serif' ? 'Georgia, Times, serif' : S.labelFont === 'rounded' ? 'ui-rounded, system-ui, sans-serif' : 'system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif'; }
         function labelText(atom) {
             if (S.labelContent === 'name') return elemInfo(atom.elem).name;
             if (S.labelContent === 'number') return String(ATOMIC_NUM[atom.elem] || '?');
@@ -638,7 +56,7 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
         // ══════════════════════ 3D ENGINE ══════════════════════
         function initThreeJS() {
             const container = $('canvas-container');
-            if (typeof THREE === 'undefined' || typeof THREE.OrbitControls === 'undefined') throw new Error('Three.js not loaded');
+            if (typeof THREE === 'undefined' || typeof OrbitControls === 'undefined') throw new Error('Three.js not loaded');
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
             camera.position.set(0, 0, 10);
@@ -649,7 +67,7 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
             renderer.domElement.setAttribute('role', 'img');
             renderer.domElement.setAttribute('aria-label', '3D molecule. Drag to rotate, scroll to zoom.');
 
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.07;
             controls.autoRotateSpeed = 2.0;
@@ -763,6 +181,8 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
             div.textContent = labelText(atom);
             div.style.fontSize = `${S.labelSize}px`;
             div.style.fontWeight = S.labelWeight;
+            div.style.fontFamily = labelFontFamily();
+            div.style.fontFamily = labelFontFamily();
             div.style.color = S.labelColorMode === 'custom' ? S.labelColor : contrastText(elemColor(atom.elem));
             $('labels-overlay').appendChild(div);
             labelElementsList.push({ element: div, mesh, radius: mesh.geometry.parameters.radius });
@@ -952,7 +372,7 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
                 s += `<circle cx="${X.toFixed(3)}" cy="${Y.toFixed(3)}" r="${r.toFixed(3)}" fill="${col}" stroke="${darken(col)}" stroke-width="${(1.2 / px).toFixed(3)}"/>`;
                 if (S.showLabels) {
                     const fill = S.labelColorMode === 'custom' ? S.labelColor : contrastText(col);
-                    s += `<text x="${X.toFixed(3)}" y="${Y.toFixed(3)}" fill="${fill}" font-size="${fs.toFixed(3)}" font-weight="${S.labelWeight}" font-family="-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',system-ui,sans-serif" text-anchor="middle" dominant-baseline="central" style="pointer-events:none;user-select:none">${escapeXML(labelText(a))}</text>`;
+                    s += `<text x="${X.toFixed(3)}" y="${Y.toFixed(3)}" fill="${fill}" font-size="${fs.toFixed(3)}" font-weight="${S.labelWeight}" font-family="${labelFontFamily()}" text-anchor="middle" dominant-baseline="central" style="pointer-events:none;user-select:none">${escapeXML(labelText(a))}</text>`;
                 }
             });
             return s;
@@ -1061,9 +481,9 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
             list.innerHTML = '';
             const counts = {};
             mol.atoms.forEach(a => counts[a.elem] = (counts[a.elem] || 0) + 1);
-            Object.keys(counts).forEach(elem => {
+            Object.keys(counts).forEach((elem, i) => {
                 const row = document.createElement('div');
-                row.className = 'legend-row';
+                row.className = 'legend-row'; row.style.setProperty('--stagger', `${i * 30}ms`);
                 const info = elemInfo(elem);
                 row.innerHTML = `<input type="color" aria-label="Color for ${escapeXML(info.name)}" value="${toHex6(elemColor(elem))}">
                     <span class="nm">${escapeXML(info.name)} <span class="hint">${escapeXML(elem)}</span></span><span class="ct">${counts[elem]}</span>`;
@@ -1074,8 +494,10 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
         const toHex6 = (c) => '#' + new THREE.Color(c).getHexString();
 
         // ── Bond hover / edit ──
+        let lastPointerEvent = null;
         function setHover(idx, ev) {
             const tip = $('bond-tip');
+            if (ev) lastPointerEvent = { clientX: ev.clientX, clientY: ev.clientY };
             if (idx !== hoverBond) {
                 hoverBond = idx;
                 if (glOk) applyBondHighlight3D();
@@ -1095,14 +517,15 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
         function cycleBond(idx) {
             const b = currentMolecule.bonds[idx];
             b.type = (b.type || 1) >= 3 ? 1 : (b.type || 1) + 1;
-            rebuild();                                   // geometry only — camera is not reset
+            rebuild();
+            if (hoverBond === idx) setHover(idx, lastPointerEvent);                                   // geometry only — camera is not reset
             showToast(`${atomTag(b.from)} – ${atomTag(b.to)} is now a ${BOND_NAMES[b.type].toLowerCase()} bond`, 'info');
         }
         function buildBondList() {
             const el = $('bond-list'); el.innerHTML = '';
             currentMolecule.bonds.forEach((b, i) => {
                 const btn = document.createElement('button');
-                btn.type = 'button'; btn.className = 'bond-item'; btn.dataset.idx = i;
+                btn.type = 'button'; btn.className = 'bond-item'; btn.dataset.idx = i; btn.style.setProperty('--stagger', `${Math.min(i, 10) * 22}ms`);
                 btn.innerHTML = `<span></span><span class="o"></span>`;
                 btn.addEventListener('click', () => cycleBond(i));
                 btn.addEventListener('mouseenter', () => setHover(i));
@@ -1311,7 +734,7 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
                 defs.push(`<radialGradient id="g${i}" cx=".35" cy=".32" r=".75"><stop offset="0" stop-color="${new THREE.Color(col).lerp(new THREE.Color('#fff'), .45).getStyle()}"/><stop offset=".55" stop-color="${col}"/><stop offset="1" stop-color="${darken(col, .6)}"/></radialGradient>`);
                 let t = '';
                 const lab = labelElementsList[i], op = lab ? parseFloat(lab.element.style.opacity || '1') : 0;
-                if (S.showLabels && op > 0.05) t = `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" fill="${lab.element.style.color}" opacity="${op}" font-size="${S.labelSize}" font-weight="${S.labelWeight}" font-family="-apple-system,'SF Pro Text','Segoe UI',system-ui,sans-serif" text-anchor="middle" dominant-baseline="central">${escapeXML(lab.element.textContent)}</text>`;
+                if (S.showLabels && op > 0.05) t = `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" fill="${lab.element.style.color}" opacity="${op}" font-size="${S.labelSize}" font-weight="${S.labelWeight}" font-family="${labelFontFamily()}" text-anchor="middle" dominant-baseline="central">${escapeXML(lab.element.textContent)}</text>`;
                 items.push({ d: p.d, svg: `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r.toFixed(1)}" fill="url(#g${i})"/>`, label: t });
             });
             bondGroupList.forEach((g, bi) => {
@@ -1340,7 +763,7 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
                     if (S.showLabels) labelElementsList.forEach(it => {      // HTML labels aren't in the WebGL buffer — composite them
                         const op = parseFloat(it.element.style.opacity || '1'); if (op < 0.05) return;
                         ctx.globalAlpha = op; ctx.fillStyle = it.element.style.color;
-                        ctx.font = `${S.labelWeight} ${S.labelSize * sc}px -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif`;
+                        ctx.font = `${S.labelWeight} ${S.labelSize * sc}px ${labelFontFamily()}`;
                         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                         ctx.fillText(it.element.textContent, parseFloat(it.element.style.left) * sc, parseFloat(it.element.style.top) * sc);
                     });
@@ -1360,13 +783,53 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
         }
 
         // ══════════════════════ INIT ══════════════════════
+        function equationToLatex(raw) {
+            const clean = String(raw).replace(/[^A-Za-z0-9+=→⇌(). -]/g, '').trim();
+            if (!clean) return '';
+            const pieces = clean.replace(/<->|->|→|⇌|=/g, token => `@@${token}@@`).split(/(@@.*?@@)/g);
+            return pieces.map(piece => {
+                if (piece.startsWith('@@')) {
+                    const op = piece.slice(2, -2);
+                    return op === '⇌' || op === '<->' ? '\\;\\rightleftharpoons\\;' : '\\;\\rightarrow\\;';
+                }
+                return piece.split('+').map(term => {
+                    const m = term.trim().match(/^(\d+(?:\.\d+)?\s*)?(.*)$/);
+                    const coefficient = (m?.[1] || '').trim(), formula = (m?.[2] || '').trim();
+                    if (!formula) return coefficient ? `\\mathrm{${coefficient}}` : '';
+                    const atoms = formula.replace(/([A-Z][a-z]?|\(|\))(\d*)/g, (_, symbol, count) => {
+                        const atom = symbol === '(' || symbol === ')' ? symbol : `\\mathrm{${symbol}}`;
+                        return `${atom}${count ? `_{${count}}` : ''}`;
+                    });
+                    return `${coefficient ? `\\mathrm{${coefficient}}\\,` : ''}${atoms}`;
+                }).join('\\;+\\;');
+            }).join('');
+        }
+        function renderEquationPreview() {
+            const input = $('equation-input'), preview = $('equation-preview'), dock = $('equation-dock');
+            if (!input || !preview) return;
+            const text = input.value.trim();
+            try {
+                const latex = equationToLatex(text);
+                if (latex) katex.render(latex, preview, { displayMode: true, throwOnError: false });
+                else preview.textContent = 'Enter a reaction to preview its typeset form.';
+            } catch (_) { preview.textContent = 'Check the formula characters and try again.'; }
+            if (dock) {
+                dock.classList.toggle('on', Boolean(S.equationText));
+                if (S.equationText) {
+                    const dockEquation = $('equation-dock-formula');
+                    if (dockEquation) katex.render(equationToLatex(S.equationText), dockEquation, { displayMode: true, throwOnError: false });
+                }
+            }
+        }
+        function openModal(id) { const el = $(id); if (!el) return; el.classList.add('open'); el.setAttribute('aria-hidden','false'); el.querySelector('.modal')?.focus(); }
+        function closeModal(id) { const el = $(id); if (!el) return; el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
         function setSidebar(open) {
             $('app').classList.toggle('side-hidden', !open);
             $('btn-sidebar').setAttribute('aria-pressed', open);
         }
         function setAutoRotate(on) { S.autoRotate = on; if (controls) controls.autoRotate = on; saveStored(); syncControls(); }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        export function initialize() {
             try { initThreeJS(); setupPointer3D(); renderer.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); glOk = false; setView('2d'); showToast('3D graphics were interrupted — switched to 2D', 'error'); }); }
             catch (err) {
                 console.warn('3D disabled:', err); glOk = false;
@@ -1379,6 +842,7 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
             if (window.matchMedia('(max-width:900px)').matches) setSidebar(false);
             applyTheme();                                   // also syncs controls
             loadMolecule(PRESET_MOLECULES.caffeine);
+            renderEquationPreview();
             setView(glOk ? S.view : '2d');
             setAutoRotate(S.autoRotate && glOk);
             animate();
@@ -1390,8 +854,18 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
             $('btn-autorotate').addEventListener('click', () => setAutoRotate(!S.autoRotate));
             $('btn-toggle-theme').addEventListener('click', () => { S.appearance = isDark() ? 'light' : 'dark'; onSetting('appearance'); });
             $('btn-sidebar').addEventListener('click', () => setSidebar($('app').classList.contains('side-hidden')));
-            $('btn-export-png').addEventListener('click', exportPNG);
-            $('btn-export-svg').addEventListener('click', exportSVG);
+            $('btn-export-png').addEventListener('click', () => { exportPNG(); closeModal('export-modal'); });
+            $('btn-export-svg').addEventListener('click', () => { exportSVG(); closeModal('export-modal'); });
+            $('btn-open-settings').addEventListener('click', () => openModal('settings-modal'));
+            $('btn-open-equation').addEventListener('click', () => { renderEquationPreview(); openModal('equation-modal'); });
+            $('equation-input').value = S.equationText || '';
+            $('equation-input').addEventListener('input', renderEquationPreview);
+            $('btn-apply-equation').addEventListener('click', () => { S.equationText = $('equation-input').value.trim(); saveStored(); renderEquationPreview(); closeModal('equation-modal'); showToast('Equation saved to this workspace', 'success'); });
+            $('btn-clear-equation').addEventListener('click', () => { $('equation-input').value = ''; S.equationText = ''; saveStored(); renderEquationPreview(); });
+            $('btn-open-export').addEventListener('click', () => openModal('export-modal'));
+            document.querySelectorAll('[data-modal-close]').forEach(b => b.addEventListener('click', () => closeModal(b.closest('.modal-backdrop').id)));
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(backdrop.id); }));
+            document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop.open').forEach(m => closeModal(m.id)); });
 
             document.addEventListener('keydown', e => {
                 if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1404,7 +878,4 @@ kbd{font:500 var(--t-cap) var(--mono);padding:1px 5px;border:1px solid var(--sep
                 else if (k === 'b') setSidebar($('app').classList.contains('side-hidden'));
                 else if (k === '/') { e.preventDefault(); $('molecule-search-input').focus(); }
             });
-        });
-    </script>
-</body>
-</html>
+        }

@@ -1,0 +1,18 @@
+<main id="stage">
+    <div class="toolbar float" role="toolbar" aria-label="View tools">
+      <button class="btn icon" id="btn-reset-view" aria-label="Reset view" title="Reset view (R)"><svg class="i"><use href="#i-reset"/></svg></button>
+      <button class="btn icon" id="btn-autorotate" aria-pressed="false" aria-label="Auto-rotate" title="Auto-rotate (A)"><svg class="i"><use href="#i-rotate"/></svg></button>
+      <button class="btn icon" id="btn-toggle-theme" aria-label="Toggle light and dark" title="Toggle light / dark"><svg class="i"><use href="#i-moon"/></svg></button>
+    </div>
+
+    <div class="equation-dock float" id="equation-dock" aria-hidden="true"><span class="equation-caption">Class equation</span><div id="equation-dock-formula"></div></div>
+    <div id="canvas-container"></div>
+    <div id="view2d" aria-label="2D structure"></div>
+    <div id="labels-overlay" aria-hidden="true"></div>
+
+    <div class="tip float" id="bond-tip" role="tooltip"></div>
+    <div class="hintbar float" id="hintbar"></div>
+    <div class="busy" id="busy"><span class="spin"></span></div>
+    <div class="overlay-msg" id="gl-error"><div><b>3D view unavailable</b><p>WebGL or the 3D library couldn’t load. Showing the 2D structure instead.</p></div></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"><svg class="i" id="toast-icon"><use href="#i-info"/></svg><span id="toast-text"></span></div>
+  </main>

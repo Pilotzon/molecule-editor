@@ -1,0 +1,22 @@
+<header>
+  <button class="btn icon" id="btn-sidebar" aria-label="Toggle sidebar" aria-pressed="true" aria-controls="sidebar" title="Toggle sidebar (B)"><svg class="i"><use href="#i-sidebar"/></svg></button>
+  <div class="brand"><svg><use href="#i-logo"/></svg><span class="nm">MolTeacher</span></div>
+
+  <form id="search-form" class="search" role="search">
+    <svg class="i"><use href="#i-search"/></svg>
+    <label class="sr-only" for="molecule-search-input">Search PubChem by compound name</label>
+    <input class="field" type="search" id="molecule-search-input" placeholder="Search PubChem — caffeine, aspirin, glucose…" autocomplete="off" spellcheck="false" enterkeyhint="search">
+    <button type="submit" id="btn-search" class="btn primary" aria-label="Fetch molecule"><span class="lbl">Fetch</span><span class="spin" aria-hidden="true"></span></button>
+  </form>
+
+  <div class="seg" id="seg-view" role="group" aria-label="View mode">
+    <button type="button" data-val="2d" aria-pressed="false" title="2D structure (2)">2D</button>
+    <button type="button" data-val="3d" aria-pressed="true" title="3D model (3)">3D</button>
+  </div>
+  <div class="formula" id="katex-header" aria-label="Molecular formula"></div>
+  <div class="hdr-actions">
+    <button class="btn" id="btn-open-equation" aria-haspopup="dialog" title="Edit a reaction equation">Equation</button>
+    <button class="btn" id="btn-open-export" aria-haspopup="dialog"><svg class="i"><use href="#i-image"/></svg><span class="lbl-txt">Export</span></button>
+    <button class="btn icon" id="btn-open-settings" aria-label="App settings" title="Settings" aria-haspopup="dialog">⚙</button>
+  </div>
+</header>

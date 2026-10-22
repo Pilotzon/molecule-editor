@@ -1,0 +1,61 @@
+<aside id="sidebar" aria-label="Inspector">
+    <details class="sec" open>
+      <summary>Molecule</summary>
+      <div class="body">
+        <div>
+          <label class="sr-only" for="preset-dropdown">Curriculum preset</label>
+          <select id="preset-dropdown" class="field">
+            <option value="caffeine">Caffeine</option><option value="water">Water</option><option value="co2">Carbon dioxide</option>
+            <option value="methane">Methane</option><option value="ethanol">Ethanol</option><option value="glucose">Glucose</option>
+            <option value="benzene">Benzene</option><option value="aspirin">Aspirin</option><option value="glycine">Glycine</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="title"><h2 id="mol-name">Caffeine</h2><span class="meta" id="mol-atom-count">24 atoms</span></div>
+          <div class="formula-sub" id="mol-formula-sub"></div>
+          <p id="mol-description"></p>
+        </div>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>Atoms</summary>
+      <div class="body">
+        <div class="row"><label for="s-atomScale">Size</label><div class="ctl slider"><input type="range" id="s-atomScale" data-key="atomScale" min="0.5" max="1.6" step="0.05"><span class="val" data-val-for="atomScale"></span></div></div>
+        <div class="row"><label for="s-showLabels">Labels</label><div class="ctl"><input type="checkbox" role="switch" class="switch" id="s-showLabels" data-key="showLabels"></div></div>
+        <div class="row"><label for="s-labelContent">Label shows</label><div class="ctl"><select class="field" id="s-labelContent" data-key="labelContent" style="width:150px"><option value="symbol">Symbol (C)</option><option value="name">Name (Carbon)</option><option value="number">Atomic number (6)</option></select></div></div>
+        
+        
+        <div class="row"><span class="name">Label color</span><div class="ctl">
+          <div class="seg" data-key="labelColorMode" role="group" aria-label="Label color mode"><button type="button" data-val="auto">Auto</button><button type="button" data-val="custom">Custom</button></div>
+          <input type="color" data-key="labelColor" aria-label="Custom label color"></div></div>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>Bonds</summary>
+      <div class="body">
+        <div class="row"><label for="s-bondScale">Thickness</label><div class="ctl slider"><input type="range" id="s-bondScale" data-key="bondScale" min="0.4" max="1.8" step="0.05"><span class="val" data-val-for="bondScale"></span></div></div>
+        <div class="row"><span class="name">Color</span><div class="ctl"><div class="seg" data-key="bondStyle" role="group" aria-label="Bond color style"><button type="button" data-val="uniform">Solid</button><button type="button" data-val="order">By order</button></div></div></div>
+        <div class="row" id="row-bond-solid"><span class="name">Solid color</span><div class="ctl"><button class="btn small" type="button" id="btn-bond-auto">Auto</button><input type="color" data-key="bondColor" aria-label="Bond color"></div></div>
+        <div class="row" id="row-bond-order"><span class="name">Single · Double · Triple</span><div class="ctl">
+          <input type="color" data-key="bondColor1" aria-label="Single bond color"><input type="color" data-key="bondColor2" aria-label="Double bond color"><input type="color" data-key="bondColor3" aria-label="Triple bond color"></div></div>
+      </div>
+    </details>
+
+    <details class="sec" open>
+      <summary>Elements</summary>
+      <div class="body">
+        <div id="cpk-legend-list"></div>
+        <div class="row"><span class="hint">Tap a swatch to recolor an element.</span><div class="ctl"><button class="btn small" type="button" id="btn-reset-colors">Reset</button></div></div>
+      </div>
+    </details>
+<details class="sec">
+      <summary>Bond editor</summary>
+      <div class="body">
+        <p class="hint" style="margin:0">Select a bond to cycle Single → Double → Triple. Also works by clicking it in the view.</p>
+        <div class="bond-list" id="bond-list"></div>
+        <div class="row"><span class="hint">Edits last until you load another molecule.</span><div class="ctl"><button class="btn small" type="button" id="btn-reset-bonds">Restore</button></div></div>
+      </div>
+    </details>
+  </aside>
